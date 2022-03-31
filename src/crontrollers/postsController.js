@@ -1,5 +1,6 @@
 import connection from "../database.js";
-import { usersRepository } from "../repositories/postsRepository.js";
+import { usersRepository } from "../repositories/usersRepository.js";
+import { postsRepository } from "../repositories/postsRepository.js";
 
 export async function createPost(req, res) {
   const { userId, description, link } = req.body;
@@ -10,7 +11,7 @@ export async function createPost(req, res) {
   }
 
   try {
-    const post = usersRepository.createPost(userId, description, link);
+    const post = postsRepository.createPost(userId, description, link);
     return res.sendStatus(201);
   } catch (error) {
     console.log(error);
@@ -59,20 +60,51 @@ export async function getPosts(req, res) {
   }
 }
 
-// export async function getAll(req, res) {
-//   const id = 1;
-//   try {
-//     const all = await connection.query(
-//       `
-//             SELECT users.*, posts.*
-//             FROM posts JOIN users ON posts."userId"=users.id
-//             WHERE users.id=1
-//             ORDER BY posts."createdAt" DESC;
-//         `
-//     );
-//     return all;
-//   } catch (error) {
-//     console.log(error);
-//     return res.sendStatus(500);
-//   }
-// }
+export async function like(req, res) {
+  const { postId } = req.params;
+  const userId = res.locals.user.id;
+  console.log(userId);
+
+  try {
+    const existLike = await postsRepository.existLike(postId, userId);
+    if (existLike.rowCount === 0) {
+      await postsRepository.insertLike(postId, userId);
+      return res.sendStatus(201);
+    } else {
+      return res.sendStatus(409);
+    }
+  } catch (error) {
+    console.log(error);
+    return res.sendStatus(500);
+  }
+}
+
+export async function unlike(req, res) {
+  const { postId } = req.params;
+  const userId = res.locals.user.id;
+
+  try {
+    const existLike = await postsRepository.existLike(postId, userId);
+    if (existLike.rowCount > 0) {
+      await postsRepository.deleteLike(postId, userId);
+      return res.sendStatus(200);
+    } else {
+      return res.sendStatus(409);
+    }
+  } catch (error) {
+    console.log(error);
+    return res.sendStatus(500);
+  }
+}
+
+export async function getLikes(req, res) {
+  const postId = req.params.postId;
+
+  try {
+    const likes = await postsRepository.getLikes(postId);
+    return res.status(200).send(likes);
+  } catch (error) {
+    console.log(error);
+    return res.sendStatus(500);
+  }
+}

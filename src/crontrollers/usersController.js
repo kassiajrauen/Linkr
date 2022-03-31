@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { v4 as uuid } from "uuid";
 import { usersRepository } from "../repositories/usersRepository.js";
 
 export async function createUser(req, res) {
@@ -30,17 +31,35 @@ export async function loginUser(req, res) {
   try {
     const user = await usersRepository.existUser(email);
     if (user.rowCount === 0) {
-      console.log("ok");
       return res.sendStatus(401);
     }
     if (bcrypt.compareSync(password, user.rows[0].password)) {
-      return res.status(200).send(user.rows[0]);
+      const token = uuid();
+      const data = { ...user.rows[0], token: token, userId: user.rows[0].id };
+      await usersRepository.createSessionToken(token, user.rows[0].id);
+
+      return res.status(200).send(data);
     } else {
-      console.log("aqui");
       return res.sendStatus(401);
     }
   } catch (error) {
     console.log(error);
     return res.sendStatus(500);
+  }
+}
+
+export async function deleteSession(req, res) {
+  const { id } = req.params;
+  try {
+    const existSession = await usersRepository.existSession(id);
+    if (existSession.rowCount === 0) {
+      return res.sendStatus(404);
+    } else {
+      await usersRepository.deleteSession(id);
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
   }
 }
