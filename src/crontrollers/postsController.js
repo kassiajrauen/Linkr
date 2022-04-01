@@ -47,7 +47,7 @@ export async function getPosts(req, res) {
           pictureUrl: post.pictureUrl,
         },
       }));
-      res.send(timeline);
+
       return res.send(timeline);
     }
   } catch (error) {
@@ -63,7 +63,6 @@ export async function getPosts(req, res) {
 export async function like(req, res) {
   const { postId } = req.params;
   const userId = res.locals.user.id;
-  console.log(userId);
 
   try {
     const existLike = await postsRepository.existLike(postId, userId);
